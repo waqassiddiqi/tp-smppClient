@@ -1,71 +1,64 @@
 package smppclient.consumer.handler;
 
-import java.util.List;
+import java.io.StringReader;
 import java.util.ResourceBundle;
 
-import javax.xml.ws.Binding;
-import javax.xml.ws.BindingProvider;
-import javax.xml.ws.handler.Handler;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
 
 import org.apache.log4j.Logger;
-import org.me.mgreply.MGReplyWS;
-import org.me.mgreply.MGReplyWSService;
+import org.xml.sax.InputSource;
 
-import smppclient.consumer.Consumer;
+import smppclient.consumer.PushMessageTask;
 import smppclient.consumer.provgw.Client;
 
 public class RequestHandler implements IRequestHandler {
-
 	private String mRequestXML;
-	private String correlationId;
+	private String mCorrelationId;
+	private String mMsisdn;
 	private Logger log = Logger.getLogger(getClass().getName());
-	
-	private static String endPoint;
-	
+
+	private static String systemErrorText = "";
+	private static String invalidCommand = "";
+
 	static {
 		ResourceBundle myResources = ResourceBundle.getBundle("client");
-		endPoint = myResources.getString("request.msgreplyws.endpoint");
+		systemErrorText = myResources.getString("response.sms_on_error");
+		invalidCommand = myResources.getString("response.invalid_keyword");
 	}
-	
-	public RequestHandler(String requestXML, String correlationId) {
+
+	public RequestHandler(String msisdn, String correlationId, String requestXML) {
 		this.mRequestXML = requestXML;
-		
-		log.info("Invoking RequestHandler for: " + correlationId);
+		this.mCorrelationId = correlationId;
+		this.mMsisdn = msisdn;
+
+		this.log.info("Invoking RequestHandler for: " + correlationId);
 	}
-	
-	@Override
+
 	public void run() {
-		log.info("Outgoing request >> " + mRequestXML);
-		
-		String response = new Client().sendRequest(mRequestXML);
-		
-		log.info("Incoming response << " + response);
-	}
-	
-	private void sendSmsResponse(String text, String msisdn) {
-		
-		log.info("Sending text messge: " + text + " to:" + msisdn);
-		
+		this.log.info("Outgoing request >> " + this.mRequestXML);
+
+		XPathFactory xpathFactory = XPathFactory.newInstance();
+		XPath xpath = xpathFactory.newXPath();
+		InputSource source = null;
+		String response = "";
+		String smsResponseText = "";
 		try {
-			MGReplyWSService service = new MGReplyWSService();
-			MGReplyWS port = service.getMGReplyWSPort();
+			response = new Client().sendRequest(this.mRequestXML);
+			this.log.info("Incoming response << " + response);
+
+			source = new InputSource(new StringReader(response));
+			smsResponseText = xpath.evaluate("/Response/resultMessage", source);
+
+			if ((smsResponseText != null) && (smsResponseText.trim().length() > 0))
+				new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, smsResponseText);
+			else
+				new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, invalidCommand);
 			
-			BindingProvider bindingProvider = (BindingProvider) port;
-			bindingProvider.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, endPoint);
-			
-			Binding binding = bindingProvider.getBinding();
-		    List<Handler> handlerChain = binding.getHandlerChain();
-		    handlerChain.add(new LogMessageHandler());
-		    binding.setHandlerChain(handlerChain);
-		    
-		    log.info("Making request to: " + bindingProvider.getRequestContext().get(BindingProvider.ENDPOINT_ADDRESS_PROPERTY));
-		    
-		    String response = port.sendMessage(Consumer.aspUsername, Consumer.aspPassword, 
-		    		this.correlationId, text, Consumer.senderId, 1, Consumer.failedCharingMsg);
-		    
-		    log.info("Response from server: " + response);
 		} catch (Exception e) {
-			log.error("Sending msg failed: " + e.getMessage(), e);
+			new PushMessageTask().sendSmsResponse(this.mMsisdn,
+					this.mCorrelationId, systemErrorText);
+			this.log.error(e.getMessage(), e);
 		}
 	}
 }

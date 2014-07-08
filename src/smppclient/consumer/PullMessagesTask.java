@@ -63,31 +63,9 @@ public class PullMessagesTask extends TimerTask {
 			
 			log.info("Making request to: " + bindingProvider.getRequestContext().get(BindingProvider.ENDPOINT_ADDRESS_PROPERTY));
 			
-			//List<StringArray> responseList = port.getServiceMsgs(Consumer.aspUsername, 
-			//		Consumer.aspPassword, Consumer.serviceShortCode);
-			Random r = new Random();
-			List<StringArray> responseList = new ArrayList<StringArray>();
+			List<StringArray> responseList = port.getServiceMsgs(Consumer.aspUsername, 
+					Consumer.aspPassword, Consumer.serviceShortCode);
 			
-			StringArray arr = null;
-			for(int i=0; i<100; i++) {
-				
-				arr = new StringArray();
-				
-				if(i%2 == 0) {
-					arr.setXms("sub");
-				}
-				
-				else if(i%3 == 0) {
-					arr.setXms("unsub");
-				}
-				else {
-					arr.setXms("status");
-				}
-				arr.setCorrelationID(java.util.UUID.randomUUID().toString());
-				arr.setMSISDN(Integer.toString(r.nextInt((9999999 - 1000000) + 1)));
-				
-				responseList.add(arr);
-			}
 			
 			log.info("Messages pulled from server: " + responseList.size());
 			
@@ -137,7 +115,7 @@ public class PullMessagesTask extends TimerTask {
 							RequestBuilder.REQUEST_FUNCTION_STATUS, "SMS", 
 								new String[] { "msisdn", response.getMSISDN() });
 					
-				} else if(response.getXms().trim().toLowerCase().startsWith("status")) {
+				} else if(response.getXms().trim().toLowerCase().startsWith("help")) {
 					
 					requestXml = RequestBuilder.build(
 							RequestBuilder.REQUEST_FUNCTION_HELP, "SMS", 
