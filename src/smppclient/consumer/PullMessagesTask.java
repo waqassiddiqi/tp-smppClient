@@ -2,7 +2,6 @@ package smppclient.consumer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -92,7 +91,7 @@ public class PullMessagesTask extends TimerTask {
 					
 					requestXml = RequestBuilder.build(
 							RequestBuilder.REQUEST_FUNCTION_ADD_SKYPE_ID, "SMS", 
-								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId });
+								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId.trim() });
 					
 				} else if(response.getXms().trim().toLowerCase().startsWith("del")) {
 					
@@ -101,7 +100,7 @@ public class PullMessagesTask extends TimerTask {
 					
 					requestXml = RequestBuilder.build(
 							RequestBuilder.REQUEST_FUNCTION_REMOVE_SKYPE_ID, "SMS", 
-								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId });
+								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId.trim() });
 					
 				} else if(response.getXms().trim().toLowerCase().startsWith("list")) {
 					
@@ -122,7 +121,7 @@ public class PullMessagesTask extends TimerTask {
 								new String[] { "msisdn", response.getMSISDN() });
 				}
 				
-				handler = new RequestHandler(requestXml, response.getCorrelationID());
+				handler = new RequestHandler(response.getMSISDN(), response.getCorrelationID(), requestXml);
 				mRequestPool.execute(handler);
 			}
 			

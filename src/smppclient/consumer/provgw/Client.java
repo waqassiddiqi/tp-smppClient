@@ -35,7 +35,13 @@ public class Client {
 			
 			out.println(request);
 			
-			return in.readLine();
+			StringBuilder sb = new StringBuilder();
+		    String line;
+		    while ((line = in.readLine()) != null)
+		        sb.append(line).append("\n");
+		    
+		    return sb.toString();
+			
 			
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
