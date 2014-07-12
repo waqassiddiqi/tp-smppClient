@@ -1,8 +1,8 @@
 
 package org.me.mgpoolbulk;
 
-import java.net.MalformedURLException;
 import java.net.URL;
+
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
@@ -28,10 +28,11 @@ public class MGPoolBulkWSService
 
     static {
         URL url = null;
-        WebServiceException e = null;
+        WebServiceException e = null;        
+        
         try {
-            url = new URL("file:/C:/Workspaces/TP/SmppClient/src/MGPoolBulkWS_1.wsdl");
-        } catch (MalformedURLException ex) {
+            url = MGPoolBulkWSService.class.getClassLoader().getResource("wsdl/MGPoolBulkWS_1.wsdl");
+        } catch (Exception ex) {
             e = new WebServiceException(ex);
         }
         MGPOOLBULKWSSERVICE_WSDL_LOCATION = url;

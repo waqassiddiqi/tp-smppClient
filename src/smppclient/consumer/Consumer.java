@@ -12,7 +12,7 @@ public class Consumer {
 	
 	public static String aspUsername;
 	public static String aspPassword;
-	public static String serviceId;
+	public static String serviceShortCode;
 	public static String subMsg;
 	public static String unSubMsg;
 	public static String failedCharingMsg;
@@ -27,15 +27,11 @@ public class Consumer {
 		
 		try {
 			ResourceBundle myResources = ResourceBundle.getBundle("client");
-			this.mRepeatInterval = Integer.parseInt(myResources.getString("request.interval"));
-			aspUsername = myResources.getString("request.asp.username");
-			aspUsername = myResources.getString("request.asp.password");
-			serviceId = myResources.getString("request.serviceid");
-			
-			subMsg = myResources.getString("message.sub");
-			unSubMsg = myResources.getString("message.unsub");
-			failedCharingMsg = myResources.getString("message.failedcharging");
-			senderId = myResources.getString("message.senderid");
+			this.mRepeatInterval = Integer.parseInt(myResources.getString("consumer.interval"));
+			aspUsername = myResources.getString("consumer.asp.username");
+			aspPassword = myResources.getString("consumer.asp.password");
+			serviceShortCode = myResources.getString("consumer.short_code");			
+			senderId = myResources.getString("consumer.sender_id");
 			
 		} catch(Exception ex) {
 			log.error("Unable to initialize: " + ex.getMessage(), ex);
@@ -49,8 +45,6 @@ public class Consumer {
 	public void start() {
 		mTimer = new Timer();
 		mTimer.scheduleAtFixedRate(new PullMessagesTask(), 1000, this.mRepeatInterval);
-		
-		for(;;) { }
 	}
 
 	public static void main(String[] args) {

@@ -12,15 +12,11 @@ import org.me.mgreply.MGReplyWS;
 import org.me.mgreply.MGReplyWSService;
 
 import smppclient.consumer.Consumer;
-import smppclient.consumer.db.SubscriberDAO;
-import smppclient.consumer.model.Subscriber;
+import smppclient.consumer.provgw.Client;
 
-public class SubscriptionHandler implements IRequestHandler {
+public class RequestHandler implements IRequestHandler {
 
-	public enum SubscriptionAction { SUB, UNSUB };
-	
-	private SubscriptionAction action;
-	private Subscriber sub;
+	private String mRequestXML;
 	private String correlationId;
 	private Logger log = Logger.getLogger(getClass().getName());
 	
@@ -31,47 +27,19 @@ public class SubscriptionHandler implements IRequestHandler {
 		endPoint = myResources.getString("request.msgreplyws.endpoint");
 	}
 	
-	public SubscriptionHandler(Subscriber sub, SubscriptionAction action, String correlationId) {
-		this.sub = sub;
-		this.action = action;
-		this.correlationId = correlationId;
+	public RequestHandler(String requestXML, String correlationId) {
+		this.mRequestXML = requestXML;
 		
-		if(action == SubscriptionAction.SUB)
-			log.info("Invoking SubscriptionHandler for new subscription");
-		else if(action == SubscriptionAction.UNSUB)
-			log.info("Invoking SubscriptionHandler to unsubscribe");
+		log.info("Invoking RequestHandler for: " + correlationId);
 	}
 	
 	@Override
 	public void run() {
+		log.info("Outgoing request >> " + mRequestXML);
 		
-		switch(this.action) {
-			case SUB:
-				log.info("Adding new subscriber: " + sub.toString());
-				
-				if(new SubscriberDAO().addSubscriber(sub)) {
-					log.info("Subcription successful: " + sub.toString());
-				} else {
-					log.info("Subcription failed: " + sub.toString());
-				}
-				
-				sendSmsResponse(Consumer.subMsg, sub.toString());
-				
-				break;
-				
-			case UNSUB:
-				log.info("Unsubscribing existing subscriber: " + sub.toString());
-				
-				if(new SubscriberDAO().removeSubscriber(sub)) {
-					log.info("Successfuly unsubscribed: " + sub.toString());
-				} else {
-					log.info("Removing subscriber failed: " + sub.toString());
-				}
-				
-				sendSmsResponse(Consumer.unSubMsg, sub.toString());
-				
-				break;
-		}
+		String response = new Client().sendRequest(mRequestXML);
+		
+		log.info("Incoming response << " + response);
 	}
 	
 	private void sendSmsResponse(String text, String msisdn) {
