@@ -4,9 +4,11 @@ import java.io.StringReader;
 import java.util.ResourceBundle;
 
 import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.log4j.Logger;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import smppclient.consumer.PushMessageTask;
@@ -45,19 +47,28 @@ public class RequestHandler implements IRequestHandler {
 		String smsResponseText = "";
 		try {
 			response = new Client().sendRequest(this.mRequestXML);
+			
 			this.log.info("Incoming response << " + response);
 
+			response = "<root>" + response.replace("|", "") + "</root>";
+			
 			source = new InputSource(new StringReader(response));
-			smsResponseText = xpath.evaluate("/Response/resultMessage", source);
+			NodeList textMessages = (NodeList) xpath.evaluate("//Response/resultMessage/message/text()", source, XPathConstants.NODESET);
 
-			if ((smsResponseText != null) && (smsResponseText.trim().length() > 0))
-				new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, smsResponseText);
-			else
-				new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, invalidCommand);
+			for (int i = 0; i < textMessages.getLength(); i++) {
+				
+				smsResponseText = textMessages.item(i).getNodeValue();
+				
+				if ((smsResponseText != null) && (smsResponseText.trim().length() > 0))
+					new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, smsResponseText);
+				else
+					new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, invalidCommand);
+			}
+			
+			
 			
 		} catch (Exception e) {
-			new PushMessageTask().sendSmsResponse(this.mMsisdn,
-					this.mCorrelationId, systemErrorText);
+			new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, systemErrorText);
 			this.log.error(e.getMessage(), e);
 		}
 	}

@@ -71,6 +71,10 @@ public class PullMessagesTask extends TimerTask {
 			IRequestHandler handler = null;
 			
 			for(StringArray response : responseList) {
+								
+				if( !validateParam(response.getMSISDN()) )
+					continue;
+				
 				if(response.getXms().trim().toLowerCase().startsWith("unsub")) {
 					
 					requestXml = RequestBuilder.build(
@@ -127,5 +131,15 @@ public class PullMessagesTask extends TimerTask {
 		} catch (Exception e) {
 			log.error("PullMessageTask failed: " + e.getMessage(), e);
 		}
+	}
+	
+	private boolean validateParam(Object o) {
+		if(o == null)
+			return false;
+		
+		if(o.toString().trim().length() == 0)
+			return false;
+		
+		return true;
 	}
 }
