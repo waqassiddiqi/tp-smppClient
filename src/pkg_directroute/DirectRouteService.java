@@ -1,8 +1,8 @@
 
 package pkg_directroute;
 
-import java.net.MalformedURLException;
 import java.net.URL;
+
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
@@ -29,11 +29,13 @@ public class DirectRouteService
     static {
         URL url = null;
         WebServiceException e = null;
+        
         try {
-            url = new URL("file:/C:/Workspaces/TP/SmppClient/src/DirectRoute_1.wsdl");
-        } catch (MalformedURLException ex) {
+            url = DirectRouteService.class.getClassLoader().getResource("wsdl/DirectRoute_1.wsdl");
+        } catch (Exception ex) {
             e = new WebServiceException(ex);
         }
+        
         DIRECTROUTESERVICE_WSDL_LOCATION = url;
         DIRECTROUTESERVICE_EXCEPTION = e;
     }

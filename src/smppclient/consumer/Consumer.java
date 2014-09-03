@@ -5,6 +5,9 @@ import java.util.Timer;
 
 import org.apache.log4j.Logger;
 
+import smppclient.consumer.directrequest.server.DirectRequestServer;
+import smppclient.consumer.task.PullMessagesTask;
+
 public class Consumer {
 	private Logger log = Logger.getLogger(getClass().getName());
 	private Timer mTimer;
@@ -49,5 +52,6 @@ public class Consumer {
 
 	public static void main(String[] args) {
 		new Consumer().start();
+		new DirectRequestServer().startServer();
 	}
 }

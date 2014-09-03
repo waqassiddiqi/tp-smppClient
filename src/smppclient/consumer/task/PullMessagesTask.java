@@ -1,4 +1,4 @@
-package smppclient.consumer;
+package smppclient.consumer.task;
 
 import java.util.List;
 import java.util.ResourceBundle;
@@ -15,7 +15,9 @@ import org.me.mgpoolbulk.MGPoolBulkWS;
 import org.me.mgpoolbulk.MGPoolBulkWSService;
 import org.me.mgpoolbulk.StringArray;
 
+import smppclient.consumer.Consumer;
 import smppclient.consumer.handler.IRequestHandler;
+import smppclient.consumer.handler.IRequestHandler.RequestType;
 import smppclient.consumer.handler.LogMessageHandler;
 import smppclient.consumer.handler.RequestHandler;
 import smppclient.consumer.provgw.util.RequestBuilder;
@@ -27,13 +29,15 @@ public class PullMessagesTask extends TimerTask {
 	private static String endPoint;
 	private static ExecutorService mRequestPool;
 	private static int mMaxClients = 10;
+	private static boolean autoPrivision = true;
 	
 	static {
 		ResourceBundle myResources = ResourceBundle.getBundle("client");
 		
 		try {
 			endPoint = myResources.getString("request.mgpoolws.endpoint");					
-			mMaxClients = Integer.parseInt(myResources.getString("provgw.max_connections"));						
+			mMaxClients = Integer.parseInt(myResources.getString("provgw.max_connections"));
+			autoPrivision = Integer.parseInt(myResources.getString("provgw.auto_provision")) == 1 ? true : false;
 		} catch (Exception e) {}
 	}
 	
@@ -67,12 +71,26 @@ public class PullMessagesTask extends TimerTask {
 			
 			log.info("Messages pulled from server: " + responseList.size());
 			
+			/***
+			 * Test
+			 */
+			/*
+			StringArray arr = new StringArray();
+			arr.setMSISDN("923202191532");
+			arr.setXms("add waqas11");
+			arr.setCorrelationID("id");
+			
+			List<StringArray> responseList = new ArrayList<StringArray>();
+			responseList.add(arr);
+			*/
+			
 			String requestXml = "";
 			IRequestHandler handler = null;
+			RequestType requestType = RequestType.OTHER;
 			
 			for(StringArray response : responseList) {
-								
-				if( !validateParam(response.getMSISDN()) )
+				
+				if(!validateParam(response))
 					continue;
 				
 				if(response.getXms().trim().toLowerCase().startsWith("unsub")) {
@@ -81,11 +99,15 @@ public class PullMessagesTask extends TimerTask {
 							RequestBuilder.REQUEST_FUNCTION_UNSUB, "SMS", 
 								new String[] { "msisdn", response.getMSISDN() });
 					
+					requestType = RequestType.UNSUB;
+					
 				} else if(response.getXms().trim().toLowerCase().startsWith("sub")) {
 					
 					requestXml = RequestBuilder.build(
 							RequestBuilder.REQUEST_FUNCTION_SUB, "SMS", 
 								new String[] { "msisdn", response.getMSISDN() });
+					
+					requestType = RequestType.SUB;
 					
 				} else if(response.getXms().trim().toLowerCase().startsWith("add")) {
 					
@@ -96,6 +118,9 @@ public class PullMessagesTask extends TimerTask {
 							RequestBuilder.REQUEST_FUNCTION_ADD_SKYPE_ID, "SMS", 
 								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId.trim() });
 					
+					if(autoPrivision)
+						requestType = RequestType.SUB;
+					
 				} else if(response.getXms().trim().toLowerCase().startsWith("del")) {
 					
 					String skypeId = response.getXms().substring(
@@ -104,6 +129,9 @@ public class PullMessagesTask extends TimerTask {
 					requestXml = RequestBuilder.build(
 							RequestBuilder.REQUEST_FUNCTION_REMOVE_SKYPE_ID, "SMS", 
 								new String[] { "msisdn", response.getMSISDN(), "skypeid", skypeId.trim() });
+					
+					if(autoPrivision)
+						requestType = RequestType.SUB;
 					
 				} else if(response.getXms().trim().toLowerCase().startsWith("list")) {
 					
@@ -124,7 +152,9 @@ public class PullMessagesTask extends TimerTask {
 								new String[] { "msisdn", response.getMSISDN() });
 				}
 				
-				handler = new RequestHandler(response.getMSISDN(), response.getCorrelationID(), requestXml);
+				handler = new RequestHandler(response.getMSISDN(), response.getCorrelationID(), 
+						requestType, requestXml);
+				
 				mRequestPool.execute(handler);
 			}
 			
@@ -133,11 +163,14 @@ public class PullMessagesTask extends TimerTask {
 		}
 	}
 	
-	private boolean validateParam(Object o) {
-		if(o == null)
+	private boolean validateParam(StringArray stringArray) {
+		if(stringArray == null)
 			return false;
 		
-		if(o.toString().trim().length() == 0)
+		if(stringArray.getMSISDN() == null)
+			return false;
+		
+		if(stringArray.getMSISDN().trim().length() == 0)
 			return false;
 		
 		return true;

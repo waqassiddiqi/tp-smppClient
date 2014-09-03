@@ -1,4 +1,4 @@
-package smppclient.consumer;
+package smppclient.consumer.task;
 
 import java.util.List;
 import java.util.ResourceBundle;
@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 import org.me.mgreply.MGReplyWS;
 import org.me.mgreply.MGReplyWSService;
 
+import smppclient.consumer.Consumer;
 import smppclient.consumer.handler.LogMessageHandler;
 
 public class PushMessageTask {
@@ -52,5 +53,37 @@ public class PushMessageTask {
 		} catch (Exception e) {
 			log.error("Sending msg failed: " + e.getMessage(), e);
 		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public String sendSms(String msisdn, String text, String serviceId) {
+		log.info("Sending text messge: " + text + " to:" + msisdn);
+		String response = "<Response></Response>";
+		
+		try {
+			MGReplyWSService service = new MGReplyWSService();
+			MGReplyWS port = service.getMGReplyWSPort();
+
+			BindingProvider bindingProvider = (BindingProvider) port;
+			bindingProvider.getRequestContext().put("javax.xml.ws.service.endpoint.address", endPoint);
+
+			Binding binding = bindingProvider.getBinding();
+			List<Handler> handlerChain = binding.getHandlerChain();
+			handlerChain.add(new LogMessageHandler());
+			binding.setHandlerChain(handlerChain);
+
+			log.info("Making request to: "
+					+ bindingProvider.getRequestContext().get(
+							"javax.xml.ws.service.endpoint.address"));
+			
+			response = port.sendMT(Consumer.aspUsername, Consumer.aspPassword, 
+					text, Consumer.senderId, msisdn, serviceId, 1);
+
+			log.info("Response from server: " + response);
+		} catch (Exception e) {
+			log.error("Sending msg failed: " + e.getMessage(), e);
+		}
+		
+		return response;
 	}
 }

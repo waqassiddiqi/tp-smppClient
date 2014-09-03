@@ -9,6 +9,7 @@ import javax.xml.ws.handler.Handler;
 import smppclient.consumer.handler.LogMessageHandler;
 
 public class Main {
+	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
 		MGReplyWSService service = new MGReplyWSService();
 		MGReplyWS port = service.getMGReplyWSPort();
