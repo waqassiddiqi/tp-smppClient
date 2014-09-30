@@ -13,7 +13,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import smppclient.consumer.provgw.Client;
-import smppclient.consumer.task.DirectRouteRequestTask;
+import smppclient.consumer.task.CPSIPRequestTask;
 import smppclient.consumer.task.PushMessageTask;
 
 public class RequestHandler implements IRequestHandler {
@@ -69,9 +69,8 @@ public class RequestHandler implements IRequestHandler {
 				
 				if ((smsResponseText != null) && (smsResponseText.trim().length() > 0)) {
 					new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, smsResponseText);
-					
-					if(result.equals("0"))
-						new DirectRouteRequestTask().sendRequest(this.mMsisdn, this.requestType);
+										
+					new CPSIPRequestTask().sendRequest(this.mCorrelationId, this.mMsisdn, this.requestType, result);
 					
 				} else {
 					new PushMessageTask().sendSmsResponse(this.mMsisdn, this.mCorrelationId, invalidCommand);
